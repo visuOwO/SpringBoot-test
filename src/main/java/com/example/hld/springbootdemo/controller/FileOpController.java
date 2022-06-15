@@ -2,10 +2,7 @@ package com.example.hld.springbootdemo.controller;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -69,5 +66,19 @@ public class FileOpController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @RequestMapping("/send/{connector}")
+    public void send(@PathVariable("connector") String connector, HttpServletRequest request) {
+        //TODO move the file to the folder under the sender's AS2 ID
+    }
+
+    @RequestMapping("/download/{connector}")
+    public void download(@PathVariable("connector") String connector, HttpServletRequest response) {
+        //TODO download the file to the folder under the sender's AS2 ID
+    }
+
+    private void getSenderByConnectionName(String partnership) {
+        //TODO call the OpenAS2 API to get the Partnership and get the Sender's AS2 ID and the Receiver's AS2 ID
     }
 }
