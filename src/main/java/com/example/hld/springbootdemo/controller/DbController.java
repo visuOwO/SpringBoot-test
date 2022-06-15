@@ -17,8 +17,6 @@ public class DbController {
 
     @RequestMapping(value="info/{id}",method = RequestMethod.GET)
     public msg_metadata getInfoById(@PathVariable Long id) {
-        /*msg_metadata data = repository.findById(id).get();
-        return data.getMsg_id();*/
         return repository.findById(id).get();
     }
 }
