@@ -15,8 +15,10 @@ import static com.example.hld.springbootdemo.controller.OpenAS2CommandController
 
 @Controller
 public class FileOpController {
-    public final static String OPENAS2_DATA_BASE_PATH="home/visu/OpenAS2-data";
+    public final static String OPENAS2_DATA_BASE_PATH="/home/visu/OpenAS2-data";
     public final static String DATA_PATH ="files";
+    public final static String OUTBOX_PATH = "outbox";
+    public final static String INBOX_PATH = "inbox";
     public final static String CERT_DATA_PATH = "certs";
     public final static String OPENAS2_SENDER = "senderIDs";
     public final static String OPENAS2_RECEIVER = "receiverIDs";
@@ -90,7 +92,7 @@ public class FileOpController {
             is.read(buffer);
             is.close();
             f.delete();
-            String outputPath = "src/main/resources" + File.separator + sender + File.separator + receiver;
+            String outputPath = OPENAS2_DATA_BASE_PATH + File.separator + OUTBOX_PATH + File.separator + sender + "-" + receiver;
             File op = new File(outputPath);
             if (!op.exists()) {
                 op.mkdirs();
@@ -134,7 +136,7 @@ public class FileOpController {
     public String downloadReceivedFile(@PathVariable("connection") String connection, @RequestParam("filename") String filename, HttpServletResponse response) {
         String senderID = getAS2IDByConnectionName(connection, OPENAS2_SENDER);
         String receiverID = getAS2IDByConnectionName(connection, OPENAS2_RECEIVER);
-        String absoluteSentPath = OPENAS2_DATA_BASE_PATH + File.separator + DATA_PATH + File.separator + senderID + "-" + receiverID + File.separator + "received";
+        String absoluteSentPath = OPENAS2_DATA_BASE_PATH + File.separator + INBOX_PATH + File.separator + senderID + "-" + receiverID + File.separator + "received";
         File f = new File(absoluteSentPath + File.separator + filename);
         try (FileInputStream fis = new FileInputStream(f)) {
             downloadFile(filename, response, f, fis);
