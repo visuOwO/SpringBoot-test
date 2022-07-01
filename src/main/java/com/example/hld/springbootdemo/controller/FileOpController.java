@@ -3,31 +3,26 @@ package com.example.hld.springbootdemo.controller;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 
 @Controller
 public class FileOpController {
-    public final static String IMG_PATH_PREFIX="static/upload";
-    public final static String url = "http://172.17.252.124:8443/api/partnership/view/";
+    public final static String DATA_PATH_PREFIX ="/opt/OpenAS2/test-data";
+    public final static String url = "https://localhost:8443/api/partnership/view/";
 
-    private String AS2_SERVER_API_URL = "http://43.155.104.116:8443/api";
+    private String AS2_SERVER_API_URL = "https://localhost:8443/api";
 
     @RequestMapping("/file/upload")
     public String uploadPage(HttpServletRequest request) {
@@ -42,7 +37,7 @@ public class FileOpController {
         }
 
         //Use Directory Relative Path
-        String directRelativePath = "src/main/resources" + File.separator + IMG_PATH_PREFIX;
+        String directRelativePath = "src/main/resources" + File.separator + DATA_PATH_PREFIX;
         File directRelativeDir = new File(directRelativePath);
 
         if (!directRelativeDir.exists()) {
@@ -58,7 +53,7 @@ public class FileOpController {
     @RequestMapping(value = "/file/download", method = RequestMethod.GET)
     public void download(@RequestParam("filename") String filename, HttpServletResponse response) {
         try {
-            String directRelativePath = "src/main/resources" + File.separator + IMG_PATH_PREFIX + File.separator + filename;
+            String directRelativePath = "src/main/resources" + File.separator + DATA_PATH_PREFIX + File.separator + filename;
             File file = new File(directRelativePath);
             String ext = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
 
@@ -69,7 +64,7 @@ public class FileOpController {
             is.close();
             response.reset();
             response.setCharacterEncoding("UTF-8");
-            response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
+            response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, "utf-8"));
             response.addHeader("Content-Length", "" + file.length());
             OutputStream outputStream = new BufferedOutputStream(response.getOutputStream());
             response.setContentType("application/octet-stream");
@@ -86,7 +81,7 @@ public class FileOpController {
         //TODO move the file to the folder under the sender's AS2 ID
         String sender = getAS2IDByConnectionName(connector,"senderIDs");
         String receiver = getAS2IDByConnectionName(connector,"receiverIDs");
-        String baseUploadPath = "src/main/resources" + File.separator + IMG_PATH_PREFIX;
+        String baseUploadPath = "src/main/resources" + File.separator + DATA_PATH_PREFIX;
         File f = new File(baseUploadPath + File.separator + filename);
         try (FileInputStream fis = new FileInputStream(f)) {
             InputStream is = new BufferedInputStream(fis);
@@ -153,6 +148,9 @@ public class FileOpController {
         }
         else {
             urlName = AS2_SERVER_API_URL + "/" + resource + "/" + action + "/" + itemId;
+        }
+        if (action.equalsIgnoreCase("importByFile")) {
+            return importByFileName(urlName,itemId,params);
         }
         try {
             URL url = new URL(urlName);
@@ -230,5 +228,46 @@ public class FileOpController {
         }
     }
 
+    private String importByFileName(String urlName, String alias, Map<String, String> params) {
+        try {
+            URL url = new URL(urlName);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Authorization", "Basic dXNlcklEOnBXZA==");
+            conn.setRequestProperty("Connection", "Keep-Alive");
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+            Iterator<Map.Entry<String, String>> entries = params.entrySet().iterator();
+            while (entries.hasNext()) {
+                Map.Entry<String, String> entry = entries.next();
+                System.out.println(entry.getKey());
+                if (entry.getKey().equalsIgnoreCase("fileName")) {
+                    String fileName = DATA_PATH_PREFIX + "/" + entry.getValue();
+                    String s = entry.getKey() + "=" + fileName;
+                    dos.writeBytes(s);
+                }
+                else {
+                    String s = entry.getKey() + "=" + entry.getValue();
+                    dos.writeBytes(s);
+                }
+                if (entries.hasNext()) {
+                    dos.writeBytes("&");
+                }
+            }
+            InputStream is = conn.getInputStream();
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String str = br.readLine();
+            if (str == null) return null;
+            is.close();
+            conn.disconnect();
+            return str;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 }
